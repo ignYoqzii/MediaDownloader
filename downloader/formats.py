@@ -22,7 +22,7 @@ def choices_for(info: dict) -> list[Choice]:
     formats = [f for f in info.get("formats", []) if not f.get("has_drm")]
     if not info.get("formats") and info.get("url") and not info.get("has_drm"):
         # Certains extracteurs génériques exposent un seul fichier sans codecs.
-        return [Choice("Fichier original — format fourni par le site", "best")]
+        return [Choice("Fichier original - format fourni par le site", "best")]
     audio = [
         f for f in formats if f.get("vcodec") == "none" and f.get("acodec") != "none"
     ]
@@ -43,22 +43,22 @@ def choices_for(info: dict) -> list[Choice]:
         sound = "sans son" if silent and not audio else "avec son"
         if fmt.get("acodec") is None:
             sound = "audio à vérifier (information non fournie par le site)"
-        choices.append(Choice(f"Vidéo {quality}{fps} — {sound}", selector))
+        choices.append(Choice(f"Vidéo {quality}{fps} - {sound}", selector))
 
     # Une piste par conteneur/langue ; pas de réencodage pour ces choix.
     tracks = {}
     for fmt in audio:
         tracks[(fmt.get("ext", "audio"), fmt.get("language") or "")] = fmt
     for (ext, language), fmt in sorted(tracks.items()):
-        suffix = f" — {language}" if language else ""
+        suffix = f" - {language}" if language else ""
         choices.append(
             Choice(
-                f"Audio {ext.upper()}{suffix} — qualité originale",
+                f"Audio {ext.upper()}{suffix} - qualité originale",
                 str(fmt["format_id"]),
             )
         )
     if audio or any(f.get("acodec") != "none" for f in videos.values()):
         choices.append(
-            Choice("Audio MP3 — conversion 192 kbit/s", "bestaudio/best", mp3=True)
+            Choice("Audio MP3 - conversion 192 kbit/s", "bestaudio/best", mp3=True)
         )
     return choices
