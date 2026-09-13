@@ -1,0 +1,9 @@
+.venv/
+.tools/
+__pycache__/
+*.pyc
+build/
+dist/
+*.part
+*.ytdl
+*.spec
