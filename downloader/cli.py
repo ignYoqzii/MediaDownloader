@@ -36,7 +36,10 @@ def ask_again() -> bool:
 
 def run(output: Path) -> int:
     """Enchaîne les téléchargements jusqu'à quitter ou fermer l'entrée."""
-    print("\n=== Media Downloader — vidéo / audio ===")
+    print("==================================")
+    print(" Media Downloader - vidéo / audio ")
+    print(" Par Yoan Lévesque                ")
+    print("==================================\n")
     print(f"Destination : {output}\n")
     options = base_options(output)
     try:
@@ -50,7 +53,7 @@ def run(output: Path) -> int:
                     raise ValueError(
                         "Entrez une URL complète commençant par https:// ou http://."
                     )
-                print("Analyse du lien et des formats disponibles…")
+                print("Analyse du lien et des formats disponibles...")
                 info = inspect_url(url, options)
                 print(f"\n{info.get('title', 'Média sans titre')}")
                 choices = choices_for(info)
@@ -61,7 +64,7 @@ def run(output: Path) -> int:
                 choice = ask_choice(choices)
                 if choice is None:
                     continue
-                print("\nTéléchargement en cours…")
+                print("\nTéléchargement en cours...")
                 download(url, choice, options)
                 print(f"\nTerminé. Fichier disponible dans : {output}")
             except (DownloadError, ValueError, OSError, RuntimeError) as error:
