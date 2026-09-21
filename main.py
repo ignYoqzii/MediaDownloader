@@ -1,30 +1,50 @@
-"""Démarre le menu et affiche les erreurs sans fermer immédiatement la fenêtre."""
+"""Native Windows entry point for Media Downloader."""
 
-from pathlib import Path
-import sys
+from multiprocessing import freeze_support
+
+from nicegui import app
+
+# Native settings must also run in the window subprocess.
+app.native.window_args['resizable'] = False
 
 
-def main() -> int:
-    """Enregistre les médias à côté de l'exe, ou de ce script en développement."""
+def main() -> None:
+    """Assemble the application and start the local server and native window."""
+    import logging
+    from logging.handlers import RotatingFileHandler
+
+    from nicegui import ui
+
+    from downloader.controller import DownloadController
+    from downloader.desktop import data_directory, load_destination
+    from downloader.service import YtDlpService, resource_root
+    from downloader.ui import DownloaderView
+
+    folder = data_directory()
+    folder.mkdir(parents=True, exist_ok=True)
+    logging.basicConfig(level=logging.WARNING, handlers=[RotatingFileHandler(
+        folder / 'application.log', maxBytes=1_000_000, backupCount=2, encoding='utf-8')])
+    controller = DownloadController(YtDlpService(), load_destination())
+
+    @ui.page('/')
+    def page() -> None:
+        """Build the page within its NiceGUI context."""
+        DownloaderView(controller)
+
+    ui.run(native=True, reload=False, host='127.0.0.1',
+           title='Media Downloader - By yoqzii', language='en-US', window_size=(1180, 900),
+           favicon=resource_root() / 'assets' / 'icon.ico')
+
+
+if __name__ == '__main__':
+    freeze_support()
     try:
-        # Import différé pour afficher clairement une dépendance Python manquante.
-        from downloader.cli import run
-
-        location = sys.executable if getattr(sys, "frozen", False) else __file__
-        return run(Path(location).resolve().parent)
-    except ImportError as error:
-        print(f"Bibliothèque Python manquante ou inutilisable : {error}")
-        print("Depuis les sources : python -m pip install -r requirements.txt")
-        print("Pour l'exe : recompilez après avoir installé les dépendances.")
+        main()
     except Exception as error:
-        print(f"Impossible de démarrer : {error}")
-    try:
-        # Après un double-clic, laisse le diagnostic visible avant de fermer.
-        input("Appuyez sur Entrée pour fermer.")
-    except (EOFError, KeyboardInterrupt):
-        pass
-    return 1
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+        import ctypes
+        import logging
+        logging.exception('Startup failed')
+        ctypes.windll.user32.MessageBoxW(
+            0, f'Unable to start Media Downloader.\n\n{error}',
+            'Media Downloader', 0x10)
+        raise SystemExit(1)

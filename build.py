@@ -1,8 +1,7 @@
-"""Construit dist/Media Downloader.exe pour Windows x64.
+"""Build dist/MediaDownloader.exe for Windows x64.
 
-Dans le venv : python -m pip install -r requirements.txt pyinstaller
-Puis : python build.py. Les outils téléchargés restent en cache dans .tools.
-"""
+Install dependencies: python -m pip install -r requirements.txt
+Then run python build.py. Downloaded tools are cached in .tools."""
 
 from pathlib import Path
 import subprocess
@@ -17,10 +16,10 @@ TOOLS = ROOT / ".tools"
 
 
 def prepare_tool(name: str, url: str, executables: tuple[str, ...]) -> None:
-    """Garde seulement les exécutables utiles, leurs DLL et les licences."""
+    """Keep the required executables, DLLs and licenses."""
     folder = TOOLS / name
     if not all((folder / executable).is_file() for executable in executables):
-        print(f"Téléchargement de {name} pour la compilation…", flush=True)
+        print(f"Downloading {name} for the build...", flush=True)
         folder.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory() as temporary:
             archive = Path(temporary) / "tool.zip"
@@ -34,7 +33,7 @@ def prepare_tool(name: str, url: str, executables: tuple[str, ...]) -> None:
                         or filename.upper().startswith(("LICENSE", "COPYING"))
                     ):
                         continue
-                    # Écrit uniquement le nom du fichier, sans les chemins de l'archive.
+                    # Use only the filename, discarding archive directory paths.
                     with zipped.open(entry) as source, (folder / filename).open(
                         "wb"
                     ) as target:
@@ -62,7 +61,8 @@ if __name__ == "__main__":
         "deno-x86_64-pc-windows-msvc.zip",
         ("deno.exe",),
     )
-    # Tout est embarqué : aucune installation sur le PC de l'utilisateur.
+    # Collect NiceGUI resources and yt-dlp dependencies.
+    # Use PyInstaller from the current Python environment.
     raise SystemExit(
         subprocess.call(
             [
@@ -70,18 +70,22 @@ if __name__ == "__main__":
                 "-m",
                 "PyInstaller",
                 "--onefile",
-                "--console",
+                "--windowed",
                 "--noconfirm",
                 "--name",
-                "Media Downloader",
+                "MediaDownloader",
                 "--collect-all",
                 "yt_dlp_ejs",
+                "--collect-data",
+                "nicegui",
                 "--icon",
                 str(ROOT / "assets" / "icon.ico"),
                 "--specpath",
                 str(ROOT / "build"),
                 "--add-data",
                 f"{TOOLS};tools",
+                "--add-data",
+                f"{ROOT / 'assets'};assets",
                 "main.py",
             ],
             cwd=ROOT,
