@@ -8,10 +8,10 @@ from pathlib import Path
 class StreamKind(StrEnum):
     """Known track composition of a source format."""
 
-    VIDEO = 'Video only'
-    AUDIO = 'Audio only'
-    COMBINED = 'Video with audio'
-    UNKNOWN = 'Unspecified'
+    VIDEO = "Video only"
+    AUDIO = "Audio only"
+    COMBINED = "Video with audio"
+    UNKNOWN = "Unspecified"
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,10 +34,18 @@ class MediaFormat:
     def __post_init__(self) -> None:
         """Reject empty identifiers and negative measurements."""
         if not self._id:
-            raise ValueError('The format must have an identifier.')
-        if any(value is not None and value < 0 for value in
-               (self._width, self._height, self._fps, self._bitrate, self._size)):
-            raise ValueError('Format measurements must be nonnegative.')
+            raise ValueError("The format must have an identifier.")
+        if any(
+            value is not None and value < 0
+            for value in (
+                self._width,
+                self._height,
+                self._fps,
+                self._bitrate,
+                self._size,
+            )
+        ):
+            raise ValueError("Format measurements must be nonnegative.")
 
     @property
     def id(self) -> str:
@@ -102,13 +110,13 @@ class MediaFormat:
     @property
     def kind(self) -> StreamKind:
         """Distinguish missing tracks from unknown codec information."""
-        video = self._video_codec not in (None, 'none')
-        audio = self._audio_codec not in (None, 'none')
+        video = self._video_codec not in (None, "none")
+        audio = self._audio_codec not in (None, "none")
         if video and audio:
             return StreamKind.COMBINED
-        if video and self._audio_codec == 'none':
+        if video and self._audio_codec == "none":
             return StreamKind.VIDEO
-        if audio and self._video_codec == 'none':
+        if audio and self._video_codec == "none":
             return StreamKind.AUDIO
         return StreamKind.UNKNOWN
 
@@ -128,9 +136,9 @@ class Media:
 
     def __post_init__(self) -> None:
         """Ensure the format catalog is immutable and nonempty."""
-        object.__setattr__(self, '_formats', tuple(self._formats))
+        object.__setattr__(self, "_formats", tuple(self._formats))
         if not self._formats:
-            raise ValueError('No downloadable audio or video formats are available.')
+            raise ValueError("No downloadable audio or video formats are available.")
 
     @property
     def id(self) -> str:
@@ -183,11 +191,15 @@ class DownloadChoice:
 
     def __post_init__(self) -> None:
         """Reject incompatible combinations before calling yt-dlp."""
-        if self._audio and (self._primary.kind != StreamKind.VIDEO
-                            or self._audio.kind != StreamKind.AUDIO):
-            raise ValueError('An audio track can only be added to a video without sound.')
-        if self._mp3 and (self._audio or self._primary.audio_codec in (None, 'none')):
-            raise ValueError('MP3 conversion requires a known audio track.')
+        if self._audio and (
+            self._primary.kind != StreamKind.VIDEO
+            or self._audio.kind != StreamKind.AUDIO
+        ):
+            raise ValueError(
+                "An audio track can only be added to a video without sound."
+            )
+        if self._mp3 and (self._audio or self._primary.audio_codec in (None, "none")):
+            raise ValueError("MP3 conversion requires a known audio track.")
 
     @property
     def primary(self) -> MediaFormat:
@@ -208,29 +220,29 @@ class DownloadChoice:
 class OperationPhase(StrEnum):
     """Stable phases used to coordinate the application state and UI."""
 
-    INITIAL = 'initial'
-    READY_TO_ANALYZE = 'ready_to_analyze'
-    ANALYZING = 'analyzing'
-    NEEDS_SELECTION = 'needs_selection'
-    READY_TO_DOWNLOAD = 'ready_to_download'
-    DOWNLOADING = 'downloading'
-    PROCESSING = 'processing'
-    COMPLETE = 'complete'
-    ERROR = 'error'
+    INITIAL = "initial"
+    READY_TO_ANALYZE = "ready_to_analyze"
+    ANALYZING = "analyzing"
+    NEEDS_SELECTION = "needs_selection"
+    READY_TO_DOWNLOAD = "ready_to_download"
+    DOWNLOADING = "downloading"
+    PROCESSING = "processing"
+    COMPLETE = "complete"
+    ERROR = "error"
 
     @property
     def default_message(self) -> str:
         """Message used when a status does not provide dynamic details."""
         return {
-            self.INITIAL: 'Copy a URL to begin.',
-            self.READY_TO_ANALYZE: 'Ready to analyze.',
-            self.ANALYZING: 'Analyzing media and formats...',
-            self.NEEDS_SELECTION: 'Select a format to download.',
-            self.READY_TO_DOWNLOAD: 'Ready to download.',
-            self.DOWNLOADING: 'Starting download...',
-            self.PROCESSING: 'Processing the file - merging or converting...',
-            self.COMPLETE: 'Download complete.',
-            self.ERROR: 'Operation failed.',
+            self.INITIAL: "Copy a URL to begin.",
+            self.READY_TO_ANALYZE: "Ready to analyze.",
+            self.ANALYZING: "Analyzing media and formats...",
+            self.NEEDS_SELECTION: "Select a format to download.",
+            self.READY_TO_DOWNLOAD: "Ready to download.",
+            self.DOWNLOADING: "Starting download...",
+            self.PROCESSING: "Processing the file - merging or converting...",
+            self.COMPLETE: "Download complete.",
+            self.ERROR: "Operation failed.",
         }[self]
 
 

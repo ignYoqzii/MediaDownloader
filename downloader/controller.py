@@ -5,8 +5,13 @@ from collections.abc import Callable
 from threading import RLock
 from typing import Protocol
 
-from .models import (DownloadChoice, DownloadResult, Media, OperationPhase,
-                     OperationStatus)
+from .models import (
+    DownloadChoice,
+    DownloadResult,
+    Media,
+    OperationPhase,
+    OperationStatus,
+)
 
 
 class MediaService(Protocol):
@@ -16,8 +21,13 @@ class MediaService(Protocol):
         """Analyze one media URL."""
         ...
 
-    def download(self, media: Media, choice: DownloadChoice, destination: Path,
-                 report: Callable[[OperationStatus], None]) -> DownloadResult:
+    def download(
+        self,
+        media: Media,
+        choice: DownloadChoice,
+        destination: Path,
+        report: Callable[[OperationStatus], None],
+    ) -> DownloadResult:
         """Download one selected media format."""
         ...
 
@@ -33,7 +43,7 @@ class DownloadController:
         """Inject the download service and initialize an empty session."""
         self._service = service
         self._destination = destination
-        self._url = ''
+        self._url = ""
         self._media: Media | None = None
         self._choice: DownloadChoice | None = None
         self._result: DownloadResult | None = None
@@ -81,7 +91,7 @@ class DownloadController:
         """Reject changes while an operation is running."""
         with self._lock:
             if self._busy:
-                raise ValueError('An operation is already in progress.')
+                raise ValueError("An operation is already in progress.")
 
     def _begin(self) -> None:
         """Reserve the session atomically to prevent concurrent operations."""
@@ -96,7 +106,11 @@ class DownloadController:
             if value != self._url:
                 self._url = value
                 self._reset_media()
-                phase = OperationPhase.READY_TO_ANALYZE if value.strip() else OperationPhase.INITIAL
+                phase = (
+                    OperationPhase.READY_TO_ANALYZE
+                    if value.strip()
+                    else OperationPhase.INITIAL
+                )
                 self._report(OperationStatus(phase))
 
     def _reset_media(self) -> None:
@@ -111,18 +125,27 @@ class DownloadController:
         with self._lock:
             self._ensure_idle()
             if not path.is_dir():
-                raise ValueError('Choose an existing folder.')
+                raise ValueError("Choose an existing folder.")
             self._destination = path.resolve()
 
     def select(self, choice: DownloadChoice | None) -> None:
         """Accept only a selection from the current format catalog."""
         with self._lock:
             self._ensure_idle()
-            if choice and (self._media is None or choice.primary not in self._media.formats
-                           or (choice.audio and choice.audio not in self._media.formats)):
-                raise ValueError("This selection does not belong to the analyzed media.")
+            if choice and (
+                self._media is None
+                or choice.primary not in self._media.formats
+                or (choice.audio and choice.audio not in self._media.formats)
+            ):
+                raise ValueError(
+                    "This selection does not belong to the analyzed media."
+                )
             self._choice = choice
-            phase = OperationPhase.READY_TO_DOWNLOAD if choice else OperationPhase.NEEDS_SELECTION
+            phase = (
+                OperationPhase.READY_TO_DOWNLOAD
+                if choice
+                else OperationPhase.NEEDS_SELECTION
+            )
             self._report(OperationStatus(phase))
 
     def _report(self, status: OperationStatus) -> None:
@@ -141,7 +164,7 @@ class DownloadController:
                 self._media = media
             self._report(OperationStatus(OperationPhase.NEEDS_SELECTION))
         except Exception:
-            self._report(OperationStatus(OperationPhase.ERROR, 'Analysis failed.'))
+            self._report(OperationStatus(OperationPhase.ERROR, "Analysis failed."))
             raise
         finally:
             with self._lock:
@@ -154,17 +177,24 @@ class DownloadController:
             self._result = None
         try:
             with self._lock:
-                media, choice, destination = self._media, self._choice, self._destination
+                media, choice, destination = (
+                    self._media,
+                    self._choice,
+                    self._destination,
+                )
             if not media or not choice:
-                raise ValueError('Select a format first.')
+                raise ValueError("Select a format first.")
             self._report(OperationStatus(OperationPhase.DOWNLOADING))
             result = self._service.download(media, choice, destination, self._report)
             with self._lock:
                 self._result = result
-            self._report(OperationStatus(OperationPhase.COMPLETE,
-                                         f'File ready: {result.path.name}', 1.0))
+            self._report(
+                OperationStatus(
+                    OperationPhase.COMPLETE, f"File ready: {result.path.name}", 1.0
+                )
+            )
         except Exception:
-            self._report(OperationStatus(OperationPhase.ERROR, 'Download failed.'))
+            self._report(OperationStatus(OperationPhase.ERROR, "Download failed."))
             raise
         finally:
             with self._lock:
